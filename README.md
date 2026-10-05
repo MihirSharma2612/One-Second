@@ -1,6 +1,8 @@
 # One Second
 
-Local Next.js storefront prototype. Checkout, catalogue, stock, and imagery are demo content. No real payment, customer account, or database workflow is connected.
+Local Next.js storefront prototype. Checkout, catalogue, stock, and imagery are demo content. No real payment, customer account, or persisted checkout is connected.
+
+Read the [backend foundation guide](docs/backend.md) for the new catalogue API, MySQL schema, local setup and database-enabled CI. Storefront pages still use demo data; database-backed order/payment workflows are not connected.
 
 ## Local checks
 

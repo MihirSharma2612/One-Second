@@ -21,6 +21,21 @@ jobs:
     env:
       NEXT_TELEMETRY_DISABLED: '1'
       NEXT_PUBLIC_STORE_MODE: demo
+      CATALOG_SOURCE: database
+      DATABASE_URL: mysql://root:ci_demo_password@127.0.0.1:3306/one_second_test
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: ci_demo_password
+          MYSQL_DATABASE: one_second_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
     steps:
       - name: Check out source
         uses: actions/checkout@v4
@@ -31,6 +46,14 @@ jobs:
           cache: npm
       - name: Install locked dependencies
         run: npm ci
+      - name: Validate database schema and generate client
+        run: npm run db:validate && npm run db:generate
+      - name: Apply migrations to isolated test database
+        run: npm run db:migrate
+      - name: Verify migration and seed retry safety
+        run: npm run db:migrate && npm run db:seed && npm run db:seed
+      - name: MySQL integration tests
+        run: npm run test:database
       - name: Lint
         run: npm run lint
       - name: Unit tests

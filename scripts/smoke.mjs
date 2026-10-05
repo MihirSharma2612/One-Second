@@ -47,6 +47,22 @@ try {
   const missing = await fetch(`${base}/not-a-page`, { signal: AbortSignal.timeout(10000) });
   assert.equal(missing.status, 404);
   console.log('PASS 404');
+  const catalogue = await fetch(`${base}/api/products?category=tees&pageSize=1`);
+  assert.equal(catalogue.status, 200);
+  const listing = await catalogue.json();
+  assert.equal(listing.total, 2);
+  assert.equal(listing.products.length, 1);
+  assert.equal(listing.source, process.env.CATALOG_SOURCE ?? 'demo');
+  assert.equal(listing.products[0].currency, 'INR');
+  const product = await fetch(`${base}/api/products/static-noise-tee`);
+  assert.equal(product.status, 200);
+  assert.equal((await product.json()).product.pricePaise, 149900);
+  for (const query of ['page=0', 'pageSize=99', 'page=1&page=2', 'unexpected=x']) {
+    assert.equal((await fetch(`${base}/api/products?${query}`)).status, 400);
+  }
+  assert.equal((await fetch(`${base}/api/products/missing`)).status, 404);
+  assert.equal((await fetch(`${base}/api/products`, { method: 'POST' })).status, 405);
+  console.log('PASS catalogue API listing, detail, validation, not-found and read-only methods');
 } finally {
   if (!stopped && server.pid) {
     const exited = new Promise(resolve => server.once('exit', resolve));
