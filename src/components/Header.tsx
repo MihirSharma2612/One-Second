@@ -1,0 +1,3 @@
+'use client';
+import Link from 'next/link'; import {useCart} from './CartProvider';
+export function Header(){const {count}=useCart();return <><div className="announce">FREE SHIPPING OVER ₹1,499　•　PAN-INDIA DELIVERY</div><header><Link href="/" className="logo">ONE SECOND<i>•</i></Link><nav><Link href="/shop">NEW DROP</Link><Link href="/shop?category=Tees">TEES</Link><Link href="/shop?category=Oversized">OVERSIZED</Link><Link href="/shop?category=Hoodies">HOODIES</Link><Link href="/shop?category=Bottoms">BOTTOMS</Link></nav><div className="tools"><Link href="/shop">SEARCH</Link><Link href="/account">ACCOUNT</Link><Link href="/cart">BAG <b>{count}</b></Link></div></header></>}
