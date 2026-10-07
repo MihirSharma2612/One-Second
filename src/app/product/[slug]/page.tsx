@@ -1,2 +1,24 @@
-'use client';import {products,money} from '@/lib/catalog';import {useCart} from '@/components/CartProvider';import {useState,use} from 'react';
-export default function Product({params}:{params:Promise<{slug:string}>}){const {slug}=use(params),product=products.find(x=>x.slug===slug),[size,setSize]=useState('M'),{add}=useCart();if(!product)return <main>Not found</main>;return <main className="product"><div className="gallery">{[1,2,3,4].map(n=><img key={n} src={product.image} alt="Product placeholder"/>)}</div><div className="details"><p className="eyebrow"><span>NEW</span>　NEW DROP / VOLUME 04</p><h1>{product.name}</h1><p className="price">{money(product.price)} {product.oldPrice&&<del>{money(product.oldPrice)}</del>}</p><label>COLOUR:　OVERDYED BLACK</label><div className="swatches">{product.colors.map(c=><i key={c} style={{background:c}}/>)}</div><label>SELECT SIZE <u>Size Guide</u></label><div className="sizes">{product.sizes.map(s=><button onClick={()=>setSize(s)} className={s===size?'selected':''} key={s}>{s}</button>)}</div><button className="button add" onClick={()=>add(product,size)}>ADD TO BAG</button><p className="stock">●　LOW STOCK — ONLY {product.stock} LEFT</p>{['PRODUCT DETAILS','FIT & FABRIC','CARE INSTRUCTIONS','DELIVERY & RETURNS'].map(x=><details key={x}><summary>{x}<b>＋</b></summary><p>{product.description}</p></details>)}</div><section className="related"><h2>YOU MAY ALSO LIKE</h2><div className="grid">{products.filter(p=>p.slug!==slug).slice(0,3).map(p=><div key={p.slug}><img src={p.image} alt=""/><b>{p.name}</b><p>{money(p.price)}</p></div>)}</div></section></main>}
+import { notFound } from 'next/navigation';
+import { getProduct, listProducts } from '@/server/catalog/service';
+import { catalogQuerySchema } from '@/server/catalog/domain';
+import { ProductDetails } from '@/components/ProductDetails';
+import { ProductCard } from '@/components/ProductCard';
+
+export const dynamic = 'force-dynamic';
+
+export default async function Product({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  if (!/^[a-z0-9-]{1,191}$/.test(slug)) notFound();
+  const product = await getProduct(slug);
+  if (!product) notFound();
+  const related = await listProducts(catalogQuerySchema.parse({ pageSize: '4' }));
+  return <main className="product"><div className="gallery">
+    {product.images.length ? product.images.map(image =>
+      <img key={image.position} src={image.url} alt={image.alt} />)
+      : <div className="image-placeholder">PRODUCT PHOTO PENDING</div>}
+  </div><ProductDetails key={product.id} product={product} />
+    <section className="related"><h2>YOU MAY ALSO LIKE</h2><div className="grid">
+      {related.products.filter(item => item.slug !== slug).slice(0, 3).map(item =>
+        <ProductCard key={item.slug} product={item} />)}
+    </div></section></main>;
+}

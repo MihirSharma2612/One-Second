@@ -1,6 +1,21 @@
 # Backend foundation
 
-One Next.js app owns route handlers, validation, services, and Prisma access. No separate Express server. Customer-facing UI remains the approved demo; the new catalogue API is not yet wired into page components or cart inventory. Do not interpret demo checkout as a persisted order.
+One Next.js app owns route handlers, validation, services, and Prisma access. No separate Express server. Home, collection and product pages now read the same catalogue service as the public API. The bag uses actual size/colour variant IDs and displayed stock limits. Do not interpret demo checkout as a persisted order.
+
+## Storefront slice
+
+Collection pages support category, search, size, availability, sorting and pagination. Product pages show real available variants and disable sold-out sizes. Missing photos use a labelled placeholder, so final client photography can arrive later. The bag keeps prices in integer paise and separates variants; it is still memory-only and resets on refresh. Client-side stock limits are convenience only, not an inventory reservation: checkout must reprice and validate stock server-side before any real orders are enabled.
+
+### Manual storefront checks
+
+1. Open `/shop`, search for `Static`, and apply sorting. Verify only matching products remain. Reset filters, select Tees, then toggle a size and In stock only.
+2. Open `/shop?pageSize=1` and use Next/Previous. Confirm the product changes and the count stays consistent.
+3. Open `/product/static-noise-tee`. Before choosing a size, Add to bag is disabled. XL is sold out in the demo. Choose M, add it, then choose L and add it.
+4. Use the header Bag link without refreshing. Verify two distinct size lines and correct INR subtotal. Refreshing clears the memory-only demo bag by design.
+5. Open `/product/missing` (404) and `/shop?page=0` (friendly invalid-filter message).
+6. In database mode, verify `/api/products` reports `source: database`; changing an active product's name in the dedicated test database must change its storefront page. Do not edit an existing WordPress database.
+
+The disposable MySQL smoke test also inserts its own unique product, confirms it renders on Home/Shop/Product, unpublishes it, checks it is hidden, and deletes that test fixture. It refuses any host/database except loopback `one_second_test`.
 
 ## Delivered interfaces
 
@@ -58,11 +73,11 @@ The first staging release provides read-only catalogue APIs. Start in `CATALOG_S
 
 Creating a database in Hostinger does not connect this application or run migrations. Verify connection permissions and the exact empty staging database before applying `prisma migrate deploy`. The current seed intentionally refuses remote databases; a separately reviewed staging import is still required before expecting demo products from database-backed APIs. No migrations or imports run automatically during `npm run build`.
 
-After deploying staging, check `/api/products` and inspect its `source` field. `demo` is not evidence of database connectivity. An empty database-backed catalogue may legitimately return zero products after migration but before import. `/api/health` proves application liveness only. Customer pages still use their original static catalogue.
+After deploying staging, check `/api/products` and inspect its `source` field. `demo` is not evidence of database connectivity. An empty database-backed catalogue may legitimately return zero products after migration but before import. `/api/health` proves application liveness only. Home, collection and product pages use the selected catalogue source too.
 
 ## Next backend slices
 
-1. Connect storefront pages and cart to catalogue variants without changing approved layouts.
+1. Add protected client product management and a reviewed staging import workflow; connect the dedicated staging database after permissions are verified.
 2. Implement guest checkout with server-priced totals, transactional inventory reservation, shipping validation and idempotency.
 3. Add Auth.js credentials support with password hashing, verification/reset and server-side authorization; then protected admin product/order operations.
 4. Add Razorpay test orders/signatures/idempotent webhooks and configurable COD. Then transactional Resend emails, tracking and returns.

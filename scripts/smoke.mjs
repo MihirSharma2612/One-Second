@@ -12,6 +12,8 @@ let spawnError;
 server.once('exit', () => { stopped = true; });
 server.once('error', error => { spawnError = error; });
 const base = 'http://localhost:3100';
+let db;
+let fixtureId;
 
 try {
   let ready = false;
@@ -63,7 +65,44 @@ try {
   assert.equal((await fetch(`${base}/api/products/missing`)).status, 404);
   assert.equal((await fetch(`${base}/api/products`, { method: 'POST' })).status, 405);
   console.log('PASS catalogue API listing, detail, validation, not-found and read-only methods');
+  assert.equal((await fetch(`${base}/product/missing`)).status, 404);
+  const invalidFilters = await fetch(`${base}/shop?page=0`);
+  assert.ok((await invalidFilters.text()).includes('INVALID FILTERS'));
+
+  if (process.env.CATALOG_SOURCE === 'database') {
+    // Never insert test data into a staging or merchant database.
+    const url = new URL(process.env.DATABASE_URL);
+    assert.ok(['localhost', '127.0.0.1'].includes(url.hostname));
+    assert.equal(url.pathname, '/one_second_test');
+    const { PrismaClient } = await import('@prisma/client');
+    db = new PrismaClient();
+    const slug = `smoke-db-${Date.now()}`;
+    const name = 'Database-only smoke T-shirt';
+    const fixture = await db.product.create({ data: {
+      slug, name, description: 'Disposable database rendering proof', pricePaise: 123400,
+      active: true, isNew: true,
+      categories: { create: { category: { connect: { slug: 'new-drop' } } } },
+      variants: { create: { sku: slug, size: 'M', color: '#111111', stock: 2 } },
+    } });
+    fixtureId = fixture.id;
+    for (const path of ['/', `/shop?q=${encodeURIComponent(name)}`, `/product/${slug}`]) {
+      const response = await fetch(`${base}${path}`);
+      assert.equal(response.status, 200);
+      assert.ok((await response.text()).includes(name), `${path} must render database-only product`);
+    }
+    await db.product.update({ where: { id: fixtureId }, data: { active: false } });
+    assert.equal((await fetch(`${base}/product/${slug}`)).status, 404);
+    assert.ok((await (await fetch(`${base}/shop?q=${encodeURIComponent(name)}`)).text()).includes('NO RESULTS FOUND'));
+    console.log('PASS database-only product renders in home, collection and detail; unpublished detail is hidden');
+  }
 } finally {
+  if (db) {
+    if (fixtureId) {
+      await db.variant.deleteMany({ where: { productId: fixtureId } });
+      await db.product.delete({ where: { id: fixtureId } });
+    }
+    await db.$disconnect();
+  }
   if (!stopped && server.pid) {
     const exited = new Promise(resolve => server.once('exit', resolve));
     server.kill('SIGTERM');

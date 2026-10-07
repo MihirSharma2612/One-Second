@@ -1,17 +1,18 @@
-import type { Product } from './catalog';
+import type { CatalogProduct } from '../server/catalog/domain';
 
-export type CartLine = { product: Product; size: string; quantity: number };
+export type CartLine = { product: CatalogProduct; variantId: string; size: string; color: string; quantity: number };
 
-export function addToCart(lines: CartLine[], product: Product, size: string): CartLine[] {
-  if (!product.sizes.includes(size) || product.stock <= 0) return lines;
-  const quantity = lines.filter(line => line.product.slug === product.slug)
+export function addToCart(lines: CartLine[], product: CatalogProduct, variantId: string): CartLine[] {
+  const variant = product.variants.find(item => item.id === variantId);
+  if (!variant || variant.stock <= 0) return lines;
+  const quantity = lines.filter(line => line.variantId === variantId)
     .reduce((sum, line) => sum + line.quantity, 0);
-  if (quantity >= product.stock) return lines;
-  const exists = lines.some(line => line.product.slug === product.slug && line.size === size);
+  if (quantity >= variant.stock) return lines;
+  const exists = lines.some(line => line.variantId === variantId);
   return exists
-    ? lines.map(line => line.product.slug === product.slug && line.size === size
-      ? { ...line, quantity: line.quantity + 1 } : line)
-    : [...lines, { product, size, quantity: 1 }];
+    ? lines.map(line => line.variantId === variantId
+      ? { ...line, product, quantity: line.quantity + 1 } : line)
+    : [...lines, { product, variantId, size: variant.size, color: variant.color, quantity: 1 }];
 }
 
 export function cartCount(lines: CartLine[]): number {
@@ -19,5 +20,5 @@ export function cartCount(lines: CartLine[]): number {
 }
 
 export function cartTotal(lines: CartLine[]): number {
-  return lines.reduce((sum, line) => sum + line.product.price * line.quantity, 0);
+  return lines.reduce((sum, line) => sum + line.product.pricePaise * line.quantity, 0);
 }

@@ -1,5 +1,15 @@
 @import "tailwindcss";
 
+.image-placeholder { min-height:250px; height:100%; display:grid; place-items:center; padding:24px; background:#e9e7e1; font:11px monospace; text-align:center; }
+.catalog-search { display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin-bottom:24px; }
+.catalog-search input,.catalog-search select { padding:12px; min-height:44px; max-width:100%; border:1px solid #aaa; background:transparent; }
+.pagination { display:flex; justify-content:center; gap:24px; padding-top:32px; }
+.shop-body a[aria-current="page"] { text-decoration:underline; font-weight:bold; }
+.swatches button { width:44px; height:44px; border:1px solid #888; border-radius:50%; }
+.swatches button[aria-pressed="true"] { outline:2px solid #151515; outline-offset:3px; }
+button:disabled { opacity:.45; cursor:not-allowed; }
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible { outline:2px solid #151515; outline-offset:3px; }
+
 :root { --ink:#151515; --paper:#f7f6f1; --stone:#e9e7e1; --lime:#caff00; }
 * { box-sizing:border-box; }
 body { margin:0; background:var(--paper); color:var(--ink); font-family:Arial,sans-serif; }
