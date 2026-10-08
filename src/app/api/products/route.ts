@@ -13,7 +13,7 @@ export async function GET(request: Request) {
   if (!query.success) return apiError(400, 'INVALID_QUERY', 'Invalid catalogue filters or pagination.');
   try {
     return Response.json(await listProducts(query.data), { headers: { 'Cache-Control': 'no-store' } });
-  } catch {
-    return unavailable();
+  } catch (error) {
+    return unavailable(error);
   }
 }

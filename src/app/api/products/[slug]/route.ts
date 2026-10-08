@@ -10,7 +10,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ slu
     const product = await getProduct(slug);
     if (!product) return apiError(404, 'PRODUCT_NOT_FOUND', 'Product not found.');
     return Response.json({ product }, { headers: { 'Cache-Control': 'no-store' } });
-  } catch {
-    return unavailable();
+  } catch (error) {
+    return unavailable(error);
   }
 }
